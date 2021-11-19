@@ -17,6 +17,8 @@ class _homeState extends State<home> {
   Color myColor = Color(0xff00bfa5);
   static const List<String> entries = <String>['A', 'B', 'C'];
   openAlertBox() {
+    final TextEditingController myController = new TextEditingController();
+
     return showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -51,6 +53,7 @@ class _homeState extends State<home> {
                   Padding(
                     padding: EdgeInsets.only(left: 30.0, right: 30.0),
                     child: TextField(
+                      controller: myController,
                       decoration: InputDecoration(
                         hintText: "新增事項",
                         border: InputBorder.none,
@@ -67,11 +70,13 @@ class _homeState extends State<home> {
                             bottomLeft: Radius.circular(32.0),
                             bottomRight: Radius.circular(32.0)),
                       ),
-                      child: Text(
-                        "增加",
-                        style: TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          primary: Colors.white,
+                        ),
+                        onPressed:  () => createNewRoute(myController.text),
+                        child: Text('增加'),
+                      )
                     ),
                   ),
                 ],
@@ -80,7 +85,21 @@ class _homeState extends State<home> {
           );
         });
   }
-  void SavePhotoToSpecifyRoute() async {
+
+  void createNewRoute(String routeName)async{
+    print(routeName);
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    new Directory('/storage/emulated/0/'+routeName).create()
+    // The created directory is returned as a Future.
+        .then((Directory directory) {
+      print(directory.path);
+    });
+  }
+
+  void savePhotoToSpecifyRoute() async {
     var status = await Permission.storage.status;
     if (!status.isGranted) {
       await Permission.storage.request();
@@ -103,7 +122,7 @@ class _homeState extends State<home> {
         itemCount: entries.length,
         itemBuilder: (BuildContext context, index) {
           return ElevatedButton(
-            onPressed: () => SavePhotoToSpecifyRoute(),
+            onPressed: () => savePhotoToSpecifyRoute(),
             child: const Text('Enabled'),
           );
         },
