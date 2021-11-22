@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class table extends StatelessWidget {
   static const routeName = '/table';
@@ -29,8 +31,15 @@ class WeekView extends StatefulWidget {
 class _WeekViewState extends State<WeekView> {
   Color myColor = Color(0xff00bfa5);
 
-  void createNewRoute(String routeName) async {
-    print(routeName);
+  _loadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+  }
+
+  void createNewRoute(String routeName, int id) async {
+    String keyId = id.toString();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(keyId, routeName);
+
     var status = await Permission.storage.status;
     if (!status.isGranted) {
       await Permission.storage.request();
@@ -42,7 +51,21 @@ class _WeekViewState extends State<WeekView> {
     });
   }
 
-  openInputtBox() {
+  void savePhotoToSpecifyRoute() async {
+    var status = await Permission.storage.status;
+    if (!status.isGranted) {
+      await Permission.storage.request();
+    }
+    final ImagePicker _picker = ImagePicker();
+    var image = await _picker.pickImage(source: ImageSource.camera);
+    String? picture_name = image?.name;
+    Directory? appDocDir = await getExternalStorageDirectory();
+    String? appDocPath = appDocDir?.path;
+    print(appDocPath);
+    await image?.saveTo("/storage/emulated/0/Pictures/" + picture_name!);
+  }
+
+  openInputtBox(int index) {
     final TextEditingController myController = new TextEditingController();
     return showDialog(
         context: context,
@@ -99,7 +122,10 @@ class _WeekViewState extends State<WeekView> {
                           style: TextButton.styleFrom(
                             primary: Colors.white,
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.pop(context);
+                            createNewRoute(myController.text, index);
+                          },
                           child: Text('增加'),
                         )),
                   ),
@@ -150,125 +176,63 @@ class _WeekViewState extends State<WeekView> {
         });
   }
 
+  Future<String?> throwIdGetData(int id) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String keyId = id.toString();
+    String? text = prefs.getString(keyId);
+    if (text == null){
+      return "";
+    }
+    return prefs.getString(keyId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GridView.count(
       crossAxisCount: 7,
       childAspectRatio: 2 / 3,
       children: List.generate(56, (index) {
-        int  pressState = 0;
+        int pressState = 0;
+
         return Container(
           color: Colors.white,
           child: ElevatedButton(
-            style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                  (Set<MaterialState> states) {
-                if (pressState == 0) {
-                  return Colors.white;
-                } else {
-                  return Color.fromRGBO(100 + index * 3, 200 - index * 2 , 180,0.5);
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                  if (pressState == 0) {
+                    return Colors.white;
+                  } else {
+                    return Color.fromRGBO(
+                        100 + index * 3, 200 - index * 2, 180, 0.5);
+                  }
+                }),
+              ),
+              onPressed: () {
+                switch (pressState) {
+                  case 0:
+                    openInputtBox(index);
+                    pressState = 1;
+                    break;
+                  case 1:
+                    selectAlbumAndCameraBox();
+                    break;
                 }
-              }),
-            ),
-            onPressed: () {
-              switch (pressState){
-                case 0:
-                  openInputtBox();
-                  pressState = 1;
-                  break;
-                case 1:
-                  selectAlbumAndCameraBox();
-                  break;
-              }
-            },
-            child: const Text(''),
-          ),
+              },
+              child: FutureBuilder(
+                future: throwIdGetData(index),
+                initialData: "",
+                builder:
+                    (BuildContext context, AsyncSnapshot<dynamic> text) {
+                      return Text(
+                        text.data,
+                      );
+                    },
+              )),
         );
       }),
     );
   }
 }
 
-// const headerHeight = 50.0;
-// const hourHeight = 100.0;
-//
-// // var twoDList = List.generate(row, (i) => List.filled(col, null, growable: false), growable: false);
-// // print(twoDList);
-// class WeekView extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return CustomScrollView(
-//       slivers: <Widget>[
-//         SliverPersistentHeader(
-//           delegate: WeekViewHeaderDelegate(),
-//           pinned: true,
-//         ),
-//         SliverToBoxAdapter(
-//           child: _buildGrid(),
-//         )
-//       ],
-//     );
-//   }
-//
-//   Widget _buildGrid() {
-//     return SizedBox(
-//       height: hourHeight * 24,
-//       child: Row(
-//         crossAxisAlignment: CrossAxisAlignment.stretch,
-//         children: List.generate(7, (d) => _buildColumn(d)),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildColumn(int d) {
-//     return Expanded(
-//       child: Stack(
-//         children: <Widget>[
-//           Positioned(
-//             left: 0.0,
-//             top: d * 25.0,
-//             right: 0.0,
-//             height: 50.0 * (d + 1),
-//             child: Container(
-//               margin: EdgeInsets.symmetric(horizontal: 2.0),
-//               color: Colors.orange[100 + d * 100],
-//             ),
-//           )
-//         ],
-//       ),
-//     );
-//   }
-// }
-//
-// class WeekViewHeaderDelegate extends SliverPersistentHeaderDelegate {
-//   @override
-//   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-//     return Container(
-//       color: Colors.red.withOpacity(0.5),
-//       child: Center(
-//         child: Text('HEADER'),
-//       ),
-//     );
-//   }
-//
-//   @override
-//   double get maxExtent => headerHeight;
-//
-//   @override
-//   double get minExtent => headerHeight;
-//
-//   @override
-//   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
-//     return false;
-//   }
-// }
 
-// int col = 7;
-// int row = 8;
-//
-// final positionList = <Widget>[];
-// for(int x = 0; x < col; x++){
-//     for(int y = 0; y < row; y++){
-//       positionList.add(_buildColumn(x, y));
-//     }
-// }

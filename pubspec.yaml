@@ -37,6 +37,7 @@ dependencies:
   path: ^1.8.0
   image_picker: ^0.8.4+3
   permission_handler: ^8.2.6
+  shared_preferences: ^2.0.9
 dev_dependencies:
   flutter_test:
     sdk: flutter
